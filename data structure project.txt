@@ -1,0 +1,147 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Define a structure for a patient
+typedef struct {
+    char name[50];
+    int age;
+    int priority; // Priority of the patient (based on age)
+    int token;    // Token for the patient
+} Patient;
+
+// Define a structure for a node in the priority queue
+typedef struct PQNode {
+    Patient patient;
+    struct PQNode* next;
+} PQNode;
+
+// Define a structure for the priority queue
+typedef struct {
+    PQNode* front;
+} PriorityQueue;
+
+// Global token counter
+int tokenCounter = 1;
+
+// Function to create a new patient node
+PQNode* createNode(Patient patient) {
+    PQNode* newNode = (PQNode*)malloc(sizeof(PQNode));
+    newNode->patient = patient;
+    newNode->next = NULL;
+    return newNode;
+}
+
+// Function to initialize the priority queue
+PriorityQueue* createPriorityQueue() {
+    PriorityQueue* pq = (PriorityQueue*)malloc(sizeof(PriorityQueue));
+    pq->front = NULL;
+    return pq;
+}
+
+// Function to calculate the priority of a patient based on age
+int calculatePriority(int age) {
+    // Higher priority for children (age < 18) and old-aged people (age >= 65)
+    if (age < 18)
+        return 3; // Highest priority for children
+    else if (age >= 65)
+        return 2; // Second highest priority for old-aged people
+    else
+        return 1; // Normal priority for others
+}
+
+// Function to enqueue a patient into the priority queue
+void enqueue(PriorityQueue* pq, Patient patient) {
+    PQNode* newNode = createNode(patient);
+    if (pq->front == NULL || pq->front->patient.priority < patient.priority) {
+        newNode->next = pq->front;
+        pq->front = newNode;
+    } else {
+        PQNode* current = pq->front;
+        while (current->next != NULL && current->next->patient.priority >= patient.priority) {
+            current = current->next;
+        }
+        newNode->next = current->next;
+        current->next = newNode;
+    }
+}
+
+// Function to dequeue the patient with the highest priority
+Patient dequeue(PriorityQueue* pq) {
+    if (pq->front == NULL) {
+        printf("Priority queue is empty!\n");
+        exit(1);
+    }
+    PQNode* temp = pq->front;
+    Patient patient = temp->patient;
+    pq->front = pq->front->next;
+    free(temp);
+    return patient;
+}
+
+// Function to assign tokens to patients
+void assignTokens(PriorityQueue* pq) {
+    PQNode* current = pq->front;
+    int token = 1;
+    while (current != NULL) {
+current->patient.token = token++;
+        current = current->next;
+    }
+}
+
+// Function to display patient tokens
+void displayTokens(PriorityQueue* pq) {
+    PQNode* current = pq->front;
+    printf("\nPatient Tokens:\n");
+    while (current != NULL) {
+        printf("Name: %s, Token: %d, Priority: %d \n", current->patient.name, current->patient.token,current->patient.token);
+        current = current->next;
+    }
+}
+
+int main() {
+    // Create a priority queue
+    PriorityQueue* pq = createPriorityQueue();
+
+    // Input number of patients
+    int numPatients;
+    printf("Enter number of patients: ");
+    scanf("%d", &numPatients);
+    getchar(); // Consume newline character
+
+    // Input patient details
+    for (int i = 0; i < numPatients; ++i) {
+        Patient p;
+        printf("Enter details for patient %d:\n", i + 1);
+        printf("Name: ");
+        fgets(p.name, sizeof(p.name), stdin);
+        p.name[strcspn(p.name, "\n")] = '\0'; // Remove trailing newline character
+        printf("Age: ");
+        scanf("%d", &p.age);
+        getchar(); // Consume newline character
+
+        // Calculate and set the priority of the patient
+        p.priority = calculatePriority(p.age);
+
+        // Enqueue the patient
+        enqueue(pq, p);
+    }
+
+    // Assign tokens to patients
+    assignTokens(pq);
+
+    // Dequeue patients and display their details
+    printf("\nPatients in priority order:\n");
+    while (pq->front != NULL) {
+        Patient p = dequeue(pq);
+        printf("Name: %s, Age: %d, Token: %d, Priority: %d\n", p.name, p.age, p.token,p.token);
+    }
+
+    // Display patient tokens
+    displayTokens(pq);
+
+    // Free memory
+    free(pq);
+
+    return 0;
+}
